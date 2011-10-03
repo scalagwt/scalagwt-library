@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="sabbus" default="build">
+  <description>
+    Build scripts for scala-library-gwt.jar.
+  </description>
+
+  <target name="build" depends="pack.done"/>
+    
+  <!-- Loads custom properties definitions -->
+  <property file="${basedir}/build.properties"/>
+  
+  <property name="scala-pack.dir" value="${scala-basedir}/build/pack"/>
+  <property name="scala-lib.dir" value="${scala-basedir}/lib"/>
+  <property name="scala-src.dir" value="${scala-basedir}/src"/>
+  <property name="scala-build.dir" value="${scala-basedir}/build"/>
+
+  <property name="src.dir" value="${basedir}/src"/>
+  <property name="build.dir" value="${basedir}/build"/>
+
+  <!-- Define gwt.classpath in build.properties file, it must include gwt-dev.jar, gwt-user.jar, gwt-lang.jar and gwt-java_lang.jar
+	     Last two jars has to be built as described here: https://groups.google.com/d/topic/scalagwt/AUp4r9Qu9Zg/discussion -->
+	<property name="scalac.args.jribble" value="-javabootclasspath ${gwt.classpath} -g:notailcalls -Xplugin:${scala-basedir}/build/quick/misc/scala-devel/plugins/factorymanifests.jar -Yjribble-text"/>
+	
+	<property name="jvm.opts" value=""/>
+
+  <!-- if ANT_OPTS is already set by the environment, it will be unaltered,
+       but if it is unset it will take this default value. -->
+  <property name="env.ANT_OPTS" value="-Xms1536M -Xmx1536M -Xss1M -XX:MaxPermSize=192M -XX:+UseParallelGC" />
+	
+	<property name="scalacfork.jvmargs" value="${env.ANT_OPTS} ${jvm.opts}"/>
+	
+	<property name="scalac.args" value=""/>
+	<property name="javac.args" value=""/>
+	
+	<target name="init">
+	  
+	  <fail unless="scala-basedir" message="Set `scala-basedir` property in build.properties file"/>
+	  <fail unless="gwt.classpath" message="Set `gwt.classpath` property in build.properties file"/>
+	  
+	  <!-- Setting-up Ant contrib tasks -->
+    <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${scala-lib.dir}/ant/ant-contrib.jar"/>
+    
+    <!-- This is the start time for the distribution -->
+    <tstamp prefix="time">
+      <format property="human" pattern="d MMMM yyyy, HH:mm:ss"/>
+      <format property="short" pattern="yyyyMMddHHmmss"/>
+    </tstamp>
+    
+    <!-- Generating version number -->
+    <property file="${scala-basedir}/build.number"/>
+    <property
+      name="version.number"
+      value="${version.major}.${version.minor}.${version.patch}-b${time.short}"/>
+    <!-- And print-out what we are building -->
+    <echo level="info" message="Build number is '${version.number}'"/>
+    <echo level="info" message="Built ${time.human} with ${java.vm.name} ${java.version}"/>
+    
+    <property name="copyright.string" value="Copyright 2002-2011, LAMP/EPFL"/>
+    
+    <path id="scala.classpath">
+      <pathelement location="${scala-pack.dir}/lib/scala-compiler.jar"/>
+      <pathelement location="${scala-pack.dir}/lib/scala-library.jar"/>
+    </path>
+    
+    <taskdef resource="scala/tools/ant/sabbus/antlib.xml" classpathref="scala.classpath"/>
+    
+	</target>
+	
+	<target name="pre-jdk2ikvm" depends="init">
+    <uptodate property="jdk2ikvm.available" targetfile="${build.dir}/jdk2ikvm.complete">
+      <srcfiles dir="${src.dir}/jdk2ikvm"/>
+    </uptodate>
+  </target>
+
+  <target name="jdk2ikvm" depends="pre-jdk2ikvm" unless="jdk2ikvm.available">
+    <stopwatch name="jdk2ikvm.timer"/>
+    <mkdir dir="${build.dir}/classes/jdk2ikvm-plugin"/>
+    <scalacfork
+      destdir="${build.dir}/classes/jdk2ikvm-plugin"
+      compilerpathref="scala.classpath"
+      params="${scalac.args}"
+      srcdir="${src.dir}/jdk2ikvm/src"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath>
+        <path refid="scala.classpath"/>
+      </compilationpath>
+    </scalacfork>
+    <copy
+      file="${src.dir}/jdk2ikvm/resources/scalac-plugin.xml"
+      todir="${build.dir}/classes/jdk2ikvm-plugin"/>
+    <!-- not very nice to create jar here but needed to load plugin -->
+    <!-- <mkdir dir="${build.dir}/misc/scala-devel/goto"/> -->
+    <jar destfile="${build.dir}/misc/scala-devel/jdk2ikvm.jar">
+      <fileset dir="${build.dir}/classes/jdk2ikvm-plugin"/>
+    </jar>
+    <touch file="${build.dir}/jdk2ikvm.complete" verbose="no"/>
+    <stopwatch name="jdk2ikvm.timer" action="total"/>
+  </target>
+
+  <target name="pre-lib-jdk2ikvm" depends="jdk2ikvm">
+    <condition property="lib-jdk2ikvm.available">
+      <and>
+        <uptodate targetfile="${build.dir}/library-jdk2ikvm.complete" srcfile="${build.dir}/jdk2ikvm.complete"/>
+        <uptodate targetfile="${build.dir}/library-jdk2ikvm.complete">
+          <srcfiles dir="${src.dir}">
+            <include name="library/**"/>
+          </srcfiles>
+        </uptodate>
+      </and>
+    </condition>
+  </target>
+
+  <target name="lib-jdk2ikvm" depends="pre-lib-jdk2ikvm" unless="lib-jdk2ikvm.available">
+    <mkdir dir="${build.dir}/pre-jdk2ikvm/library"/>
+    <!-- HACK!(grek): If we copy with copy ant target then scala compiler fails with NPE.
+         I believe we rely on some order that is only preserved if all attributes
+         of files being copied are preserved. On my system it's enough to just
+         omit -p flag for cp commmand to make build fail. Obviously, it's a bug
+         in scala compiler but I don't want to spend time fixing it when fairly
+         easy work-around is present. This stuff will be moved out of scalagwt-scala
+         project soon anyway. -->
+    <exec executable="cp">
+      <arg value="-Rp"/>
+      <arg value="${scala-src.dir}/library/"/>
+      <arg value="${build.dir}/pre-jdk2ikvm/library/"/>
+    </exec>
+    <copy todir="${build.dir}/pre-jdk2ikvm/library">
+      <fileset dir="${scala-src.dir}/factorymanifests/library">
+        <include name="**/*.scala"/>
+      </fileset>
+      <fileset dir="${scala-src.dir}/continuations/library">
+        <include name="**/*.scala"/>
+      </fileset>
+    </copy>
+    <mkdir dir="${build.dir}/jdk2ikvm/library"/>
+    <scalacfork
+      destdir="${build.dir}/jdk2ikvm/library"
+      compilerpathref="scala.classpath"
+      srcpath="${build.dir}/pre-jdk2ikvm/library"
+      params="-Ystop-before:superaccessors
+          -P:jdk2ikvm:output-directory:${build.dir}/jdk2ikvm/library
+          -P:jdk2ikvm:replacements-directory:${src.dir}/jdk2ikvm/resources/replacements
+          -d ${build.dir}/jdk2ikvm/library
+          -Xplugin ${build.dir}/misc/scala-devel/jdk2ikvm.jar
+          -Yrangepos"
+      srcdir="${build.dir}/pre-jdk2ikvm/library"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="**/*.scala"/>
+      <compilationpath refid="scala.classpath"/>
+    </scalacfork>
+    <!-- HACK! jdk2ikvm should handle it but scalacfork ant task filters out anything that doesn't have .scala extension -->
+    <copy todir="${build.dir}/jdk2ikvm/library" overwrite="true">
+      <fileset dir="${src.dir}/jdk2ikvm/resources/replacements">
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+    <!-- now we copy rest of Java files that have no correspodning replacement defined. Copy ant task doesn't
+    overwrite by default so files copied above will be kept intact -->
+    <copy todir="${build.dir}/jdk2ikvm/library">
+      <fileset dir="${build.dir}/pre-jdk2ikvm/library">
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+    <touch file="${build.dir}/library-jdk2ikvm.complete" verbose="no"/>
+  </target>
+
+  <target name="pre-lib-jribble" depends="lib-jdk2ikvm">
+    <uptodate property="lib-jribble.available" targetfile="${build.dir}/library-gwt.complete">
+      <srcfiles dir="${build.dir}/jdk2ikvm">
+        <include name="library/**"/>
+        <include name="factorymanifests/**"/>
+        <include name="continuations/**"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <target name="lib-jribble" depends="pre-lib-jribble" unless="lib-jribble.available">
+    <stopwatch name="lib-jribble.timer"/>
+    <mkdir dir="${build.dir}/gwt/library"/>
+    <scalacfork
+      destdir="${build.dir}/gwt/library"
+      compilerpathref="scala.classpath"
+      srcpath="${build.dir}/jdk2ikvm/library"
+      params="${scalac.args.jribble}"
+      srcdir="${build.dir}/jdk2ikvm/library"
+      target="jribble"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="scala/**/*.scala"/>
+      <include name="scala/**/*.java"/>
+      <exclude name="scala/util/continuations/**"/>
+    </scalacfork>
+    <!-- Delete jribble files corresponding to primitive types. Name of classes declared for
+         primitive types are broken and would cause parsing error. Those classes are stubs
+         and are never referenced so we can safely exclude them. -->
+    <delete>
+      <fileset dir="${build.dir}/gwt/library/scala">
+        <include name="Boolean.jribble"/>
+        <include name="Byte.jribble"/>
+        <include name="Char.jribble"/>
+        <include name="Double.jribble"/>
+        <include name="Float.jribble"/>
+        <include name="Int.jribble"/>
+        <include name="Long.jribble"/>
+        <include name="Short.jribble"/>
+        <include name="Unit.jribble"/>
+      </fileset>
+    </delete>
+    <javac
+      srcdir="${build.dir}/jdk2ikvm/library"
+      destdir="${build.dir}/gwt/library"
+      classpath="${build.dir}/gwt/library"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+      <compilerarg line="${javac.args}"/> 
+    </javac>
+    <scalacfork
+      destdir="${build.dir}/gwt/library"
+      compilerpathref="scala.classpath"
+      params="${scalac.args.jribble} -Xpluginsdir ${scala-pack.dir}/misc/scala-devel/plugins -Xplugin-require:continuations -P:continuations:enable"
+      srcdir="${build.dir}/jdk2ikvm/library"
+      target="jribble"
+      jvmargs="${scalacfork.jvmargs}">
+      <include name="scala/util/continuations/**"/>
+      <compilationpath>
+        <pathelement location="${build.dir}/gwt/library"/>
+      </compilationpath>
+    </scalacfork>
+    <propertyfile file="${build.dir}/gwt/library/library.properties">
+      <entry key="version.number" value="${version.number}"/>
+      <entry key="copyright.string" value="${copyright.string}"/>
+    </propertyfile>
+    <copy todir="${build.dir}/gwt/library">
+      <fileset dir="${src.dir}/library">
+        <include name="**/*.xml"/>
+      </fileset>
+    </copy>
+    <copy todir="${build.dir}/gwt/library">
+      <fileset dir="${build.dir}/jdk2ikvm/library">
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+    <touch file="${build.dir}/library-gwt.complete" verbose="no"/>
+    <stopwatch name="lib-jribble.timer" action="total"/>
+  </target>
+
+  <target name="pack.pre-lib-jribble">
+    <uptodate
+      property="pack.lib-jribble.available"
+      targetfile="${build-pack.dir}/lib/scala-library-gwt.jar"
+      srcfile="${build.dir}/library-gwt.complete"/>
+  </target>
+
+  <target name="pack.lib-jribble" depends="pack.pre-lib-jribble" unless="pack.lib-jribble.available">
+    <mkdir dir="${build-pack.dir}/lib"/>
+    <jar destfile="${build-pack.dir}/lib/scala-library-gwt.jar">
+      <fileset dir="${build.dir}/gwt/library"/>
+    </jar>
+  </target>
+
+  <target name="pack.done" depends="pack.lib-jribble"/>
+  
+  <target name="clean">
+    <delete dir="${build.dir}" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+  </target>
+
+</project>
