@@ -114,19 +114,11 @@
 
   <target name="lib-jdk2ikvm" depends="pre-lib-jdk2ikvm" unless="lib-jdk2ikvm.available">
     <mkdir dir="${build.dir}/pre-jdk2ikvm/library"/>
-    <!-- HACK!(grek): If we copy with copy ant target then scala compiler fails with NPE.
-         I believe we rely on some order that is only preserved if all attributes
-         of files being copied are preserved. On my system it's enough to just
-         omit -p flag for cp commmand to make build fail. Obviously, it's a bug
-         in scala compiler but I don't want to spend time fixing it when fairly
-         easy work-around is present. This stuff will be moved out of scalagwt-scala
-         project soon anyway. -->
-    <exec executable="cp">
-      <arg value="-Rp"/>
-      <arg value="${scala-src.dir}/library"/>
-      <arg value="${build.dir}/pre-jdk2ikvm/"/>
-    </exec>
-    <copy todir="${build.dir}/pre-jdk2ikvm/library">
+    <copy todir="${build.dir}/pre-jdk2ikvm/library" preservelastmodified="true">
+      <fileset dir="${scala-src.dir}/library">
+        <include name="**/*.scala"/>
+        <include name="**/*.java"/>
+      </fileset>
       <fileset dir="${scala-src.dir}/factorymanifests/library">
         <include name="**/*.scala"/>
       </fileset>
