@@ -245,7 +245,7 @@
     <stopwatch name="lib-jribble.timer" action="total"/>
   </target>
 
-  <target name="pack.pre-lib-jribble">
+  <target name="pack.pre-lib-jribble" depends="lib-jribble">
     <uptodate
       property="pack.lib-jribble.available"
       targetfile="${build-pack.dir}/lib/scala-library-gwt.jar"
