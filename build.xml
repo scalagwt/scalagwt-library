@@ -253,8 +253,8 @@
   </target>
 
   <target name="pack.lib-jribble" depends="pack.pre-lib-jribble" unless="pack.lib-jribble.available">
-    <mkdir dir="${build-pack.dir}/lib"/>
-    <jar destfile="${build-pack.dir}/lib/scala-library-gwt.jar">
+    <mkdir dir="${build.dir}/lib"/>
+    <jar destfile="${build.dir}/lib/scala-library-gwt.jar">
       <fileset dir="${build.dir}/gwt/library"/>
     </jar>
   </target>
