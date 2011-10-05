@@ -123,8 +123,8 @@
          project soon anyway. -->
     <exec executable="cp">
       <arg value="-Rp"/>
-      <arg value="${scala-src.dir}/library/"/>
-      <arg value="${build.dir}/pre-jdk2ikvm/library/"/>
+      <arg value="${scala-src.dir}/library"/>
+      <arg value="${build.dir}/pre-jdk2ikvm/"/>
     </exec>
     <copy todir="${build.dir}/pre-jdk2ikvm/library">
       <fileset dir="${scala-src.dir}/factorymanifests/library">
