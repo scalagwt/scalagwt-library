@@ -116,11 +116,12 @@ abstract class JDK2IKVM
             "scala/sys/process/",
             //soft/weak references, needed for structural types but we don't support them
             "scala/ref/",
+            //refers to reflection
+            "scala/beans/ScalaBeanInfo.scala",
             //we cannot exclude the whole reflect package, compiler depends on some classes and we need manifests
             "scala/reflect/generic/",
             "scala/reflect/Print.scala",
             //refers to reflection
-            "scala/reflect/ScalaBeanInfo.scala",
             "scala/reflect/NameTransformer.scala",
             "scala/reflect/ReflectionUtils.scala",
             //refers to reflection
