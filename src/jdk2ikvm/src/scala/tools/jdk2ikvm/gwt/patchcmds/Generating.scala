@@ -167,19 +167,19 @@ trait Generating extends Patching { this : Plugin =>
       md.mods.positions.get(mflag) match {
         case Some(ovrd) => ovrd match {
             case rp : RangePosition => patchtree.replace(rp.start, rp.end + 1, "")
-            case _ => warning(md.pos, "couldn't delete '"+scala.reflect.generic.ModifierFlags.flagToString(mflag)+"' modifier: " + asString(md))
+            case _ => warning(md.pos, "couldn't delete '"+scala.reflect.internal.ModifierFlags.flagToString(mflag)+"' modifier: " + asString(md))
           }
         case _ => ()
       }
     }
 
     def delOverrideModif(dd: DefDef) {
-      import scala.reflect.generic.ModifierFlags
+      import scala.reflect.internal.ModifierFlags
       delModifier(dd, ModifierFlags.OVERRIDE)
     }
     
     def delFinalModif(vd: ValDef) {
-      import scala.reflect.generic.ModifierFlags
+      import scala.reflect.internal.ModifierFlags
       delModifier(vd, ModifierFlags.FINAL)
     }
 
