@@ -17,10 +17,6 @@
 
   <property name="src.dir" value="${basedir}/src"/>
   <property name="build.dir" value="${basedir}/build"/>
-
-  <!-- Define gwt.classpath in build.properties file, it must include gwt-dev.jar, gwt-user.jar, gwt-lang.jar and gwt-java_lang.jar
-	     Last two jars has to be built as described here: https://groups.google.com/d/topic/scalagwt/AUp4r9Qu9Zg/discussion -->
-	<property name="scalac.args.jribble" value="-javabootclasspath ${gwt.classpath} -g:notailcalls -Xplugin:${scala-basedir}/build/quick/misc/scala-devel/plugins/factorymanifests.jar -Yjribble-text"/>
 	
 	<property name="jvm.opts" value=""/>
 
@@ -36,7 +32,7 @@
 	<target name="init">
 	  
 	  <fail unless="scala-basedir" message="Set `scala-basedir` property in build.properties file"/>
-	  <fail unless="gwt.classpath" message="Set `gwt.classpath` property in build.properties file"/>
+	  <fail unless="gwt-basedir" message="Set `gwt-basedir` property in build.properties file"/>
 	  
 	  <!-- Setting-up Ant contrib tasks -->
     <taskdef resource="net/sf/antcontrib/antlib.xml" classpath="${scala-lib.dir}/ant/ant-contrib.jar"/>
@@ -158,7 +154,42 @@
     <touch file="${build.dir}/library-jdk2ikvm.complete" verbose="no"/>
   </target>
 
-  <target name="pre-lib-jribble" depends="lib-jdk2ikvm">
+  <target name="pre-gwt-emul" depends="init">
+    <uptodate property="gwt-emul.available" targetfile="${build.dir}/gwt-emul.complete">
+      <srcfiles dir="${gwt-basedir}/">
+        <include name="dev/core/super/com/google/gwt/dev/jjs/intrinsic/**/*.java"/>
+        <include name="user/super/com/google/gwt/emul/**/*.java"/>
+      </srcfiles>
+    </uptodate>
+  </target>
+
+  <!-- Builds gwt emulation of Java library. We'll use classes from this build when compiling scala library so
+       we can make sure we don't depend on classes/methods gwt doesn't support. Emulation classes are not
+       included in scala-library-gwt.jar. -->
+  <target name="gwt-emul" depends="pre-gwt-emul">
+    <!-- When rebuilding gwt emulation classes always remove old ones to make sure we don't run into strange errors -->
+    <delete dir="${build.dir}/classes/gwt-emul" includeemptydirs="yes" quiet="yes" failonerror="no"/>
+    <mkdir dir="${build.dir}/classes/gwt-emul"/>
+    <javac
+      srcdir="${gwt-basedir}/dev/core/super/com/google/gwt/dev/jjs/intrinsic"
+      destdir="${build.dir}/classes/gwt-emul"
+      classpath="${gwt-basedir}/build/lib/gwt-dev.jar:${gwt-basedir}/build/lib/gwt-user.jar"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+      <compilerarg line="${javac.args}"/>
+    </javac>
+    <javac
+      srcdir="${gwt-basedir}/user/super/com/google/gwt/emul/"
+      destdir="${build.dir}/classes/gwt-emul"
+      classpath="${build.dir}/classes/gwt-emul:${gwt-basedir}/build/lib/gwt-dev.jar:${gwt-basedir}/build/lib/gwt-user.jar"
+      includes="**/*.java"
+      target="1.5" source="1.5">
+      <compilerarg line="${javac.args}"/>
+    </javac>
+    <touch file="${build.dir}/gwt-emul.complete" verbose="no"/>
+  </target>
+
+  <target name="pre-lib-jribble" depends="lib-jdk2ikvm, gwt-emul">
     <uptodate property="lib-jribble.available" targetfile="${build.dir}/library-gwt.complete">
       <srcfiles dir="${build.dir}/jdk2ikvm">
         <include name="library/**"/>
@@ -169,6 +200,8 @@
   </target>
 
   <target name="lib-jribble" depends="pre-lib-jribble" unless="lib-jribble.available">
+    <property name="gwt-emul.classpath" value="${build.dir}/classes/gwt-emul:${gwt-basedir}/build/lib/gwt-dev.jar:${gwt-basedir}/build/lib/gwt-user.jar"/>
+    <property name="scalac.args.jribble" value="-javabootclasspath ${gwt-emul.classpath} -g:notailcalls -Xplugin:${scala-basedir}/build/quick/misc/scala-devel/plugins/factorymanifests.jar -Yjribble-text"/>
     <stopwatch name="lib-jribble.timer"/>
     <mkdir dir="${build.dir}/gwt/library"/>
     <scalacfork
