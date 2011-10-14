@@ -1,5 +1,4 @@
 #Path to scalagwt-scala checkout. It must have scala compiler build finished from scalagwt branch. Just type `ant` in scalagwt-scala to build it.
-scala-basedir=/Users/grek/scalagwt/scalagwt-scala
-#Path to various GWT libs. We should automate building them in future so one would provide gwt-basedir instead.
-#You can download those libs (and unpack into scalagwt-library folder) from http://dl.dropbox.com/u/12870350/scalagwt/gwtJavaEmul.zip
-gwt.classpath=gwtJavaEmul/lib/gwt-lang.jar:gwtJavaEmul/lib/gwt-java_lang.jar:gwtJavaEmul/lib/gwt-user.jar
+scala-basedir=../scalagwt-scala
+#Path to scalagwt-scala checkout. It must have gwt compiler build finished from scalagwt branch. Just type `ant dist-dev` in scalagwt-gwt to build it.
+gwt-basedir=../scalagwt-gwt
