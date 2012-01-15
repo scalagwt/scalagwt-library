@@ -572,7 +572,7 @@ trait Generating extends Patching { this : Plugin =>
     
     private lazy val ConcurrentPackage = definitions.getRequiredModule("java.util.concurrent")
     
-    private lazy val JavaConvertersObjectClass = definitions.getRequiredModule("scala.collection.JavaConverters").moduleClass
+    private lazy val JavaConvertersTrait = definitions.getRequiredClass("scala.collection.JavaConverters")
     
     private lazy val DictionaryClass = definitions.getRequiredClass("java.util.Dictionary")
     
@@ -591,11 +591,11 @@ trait Generating extends Patching { this : Plugin =>
     private def badRef(s: Symbol): Boolean = concurrentRef(s) ||  dictionaryRef(s) || propertiesRef(s) 
 
     def collectPatches(tree: Tree) {
-      within(JavaConvertersObjectClass)(tree) {
+      within(JavaConvertersTrait)(tree) {
         case x: ClassDef if (templateNames contains x.name) =>
           removeTemplate(x)
       }
-      enclosingClass(JavaConvertersObjectClass)(tree) {
+      enclosingClass(JavaConvertersTrait)(tree) {
         case x: DefDef if methodRefersTo(x.symbol)(badRef) =>
           removeDefDef(x)
         case x: DefDef if defNames contains x.name =>
