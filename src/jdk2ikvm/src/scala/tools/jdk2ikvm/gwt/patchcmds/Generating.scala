@@ -647,6 +647,31 @@ trait Generating extends Patching { this : Plugin =>
     }
   }
 
+  /** Fix some weird issues with LUB calculation that manifest themselves */
+  private [Generating] class FixLubsInTrieIterator(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
+
+    private val clazz = definitions.getRequiredClass("scala.collection.immutable.TrieIterator")
+
+    def collectPatches(tree: Tree) {
+      enclosingClass(clazz)(tree) {
+        case x: DefDef if x.name.toString == "getElems" =>
+          val range = x.rhs.pos.asInstanceOf[RangePosition]
+          val replacement = """(x match {
+            |case x: HashTrieMap[_, _] => x.elems.asInstanceOf[Array[Iterable[T]]]
+            |case x: HashTrieSet[_]    => x.elems.asInstanceOf[Array[Iterable[T]]]
+            |})""".stripMargin
+          patchtree.replace(range.start-1, range.end, replacement)
+        case x: DefDef if x.name.toString == "collisionToArray" =>
+          val range = x.rhs.pos.asInstanceOf[RangePosition]
+          val replacement = """(x match {
+            |case x: HashMapCollision1[_, _] => x.kvs.map(x => HashMap(x)).toArray.asInstanceOf[Array[Iterable[T]]]
+            |case x: HashSetCollision1[_]    => x.ks.map(x => HashSet(x)).toArray.asInstanceOf[Array[Iterable[T]]]
+            |})""".stripMargin
+          patchtree.replace(range.start-1, range.end, replacement)
+      }
+    }
+  }
+
   /* ------------------------ The main patcher ------------------------ */
 
   class RephrasingTraverser(patchtree: PatchTree) extends Traverser {
@@ -679,6 +704,8 @@ trait Generating extends Patching { this : Plugin =>
 
     private lazy val cleanupFlatHashTable = new CleanupFlatHashTable(patchtree)
 
+    private lazy val fixLubsInTrieIterator = new FixLubsInTrieIterator(patchtree)
+
     override def traverse(tree: Tree): Unit = {
       
       removeParallelCollections collectPatches tree
@@ -708,6 +735,8 @@ trait Generating extends Patching { this : Plugin =>
       removeCloneMethod collectPatches tree
       
       cleanupFlatHashTable collectPatches tree
+
+      fixLubsInTrieIterator collectPatches tree
 
       super.traverse(tree) // "longest patches first" that's why super.traverse after collectPatches(tree).
     }
