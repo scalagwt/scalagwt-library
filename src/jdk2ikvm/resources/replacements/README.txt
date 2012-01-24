@@ -130,3 +130,10 @@ See https://github.com/scalagwt/scalagwt-scala/issues/22
 scala/util/continuations/ControlContext.scala
 ---------------------------------------------
 Work-arounds (rewrites) for pattern matcher shortcomings.
+
+scala/runtime/AbstractPartialFunction.scala
+-------------------------------------------
+The latest implementation of this class depends on Object.clone method that GWT
+doesn't support. We provide a replacement that simply throws an exception when
+orElse is called. We'll need to investigate further to see how this can be
+reimplemented in a proper way.

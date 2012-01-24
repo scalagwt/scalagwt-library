@@ -107,6 +107,7 @@ trait Generating extends Patching { this : Plugin =>
     }
     
     def removeAnnotation(x: AnnotationInfo) {
+      x.atp //force annotation info so we get proper position
       val range = x.pos.asInstanceOf[RangePosition]
       //stat-1 because range doesn't include position for @ character
       patchtree.replace(range.start-1, range.end, "")
@@ -239,11 +240,11 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes par, parCombiner defs and parent traits mixed in to support parallel collections */
   private[Generating] class RemoveParallelCollections(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val ParallelizableClass = definitions.getClass("scala.collection.Parallelizable")
+    private lazy val ParallelizableClass = definitions.getRequiredClass("scala.collection.Parallelizable")
     
-    private lazy val CustomParallelizableClass = definitions.getClass("scala.collection.CustomParallelizable")
+    private lazy val CustomParallelizableClass = definitions.getRequiredClass("scala.collection.CustomParallelizable")
     
-    private lazy val ParallelPackage = definitions.getModule("scala.collection.parallel")
+    private lazy val ParallelPackage = definitions.getRequiredModule("scala.collection.parallel")
     
     private val parallDefNames = Set("par", "parCombiner") map (newTermName) 
     
@@ -276,13 +277,13 @@ trait Generating extends Patching { this : Plugin =>
     
     private val writeReplace = newTermName("writeReplace")
     
-    private val serializableClass = definitions.getClass("scala.Serializable")
+    private val serializableClass = definitions.getRequiredClass("scala.Serializable")
     
     private def proxyForRemoval(s: Symbol) = s.name == proxy
     
     private object WriteObjectMethod extends (Symbol => Boolean) {
       val name = newTermName("writeObject")
-      val paramSymbol = definitions.getClass("java.io.ObjectOutputStream")
+      val paramSymbol = definitions.getRequiredClass("java.io.ObjectOutputStream")
       
       def apply(s: Symbol): Boolean = s.name == name && (s.tpe match {
         case MethodType(param :: Nil, _) =>
@@ -293,7 +294,7 @@ trait Generating extends Patching { this : Plugin =>
     
     private object ReadObjectMethod extends (Symbol => Boolean) {
       val name = newTermName("readObject")
-      val paramSymbol = definitions.getClass("java.io.ObjectInputStream")
+      val paramSymbol = definitions.getRequiredClass("java.io.ObjectInputStream")
       
       def apply(s: Symbol): Boolean = s.name == name && (s.tpe match {
         case MethodType(param :: Nil, _) =>
@@ -370,9 +371,9 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes RoundingMode object that depends on Enumeration */
   private[Generating] class CleanupBigDecimal(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private val bigDecimalModule = definitions.getModule("scala.math.BigDecimal")
+    private val bigDecimalModule = definitions.getRequiredModule("scala.math.BigDecimal")
     
-    private val roundingModeModule = definitions.getMember(bigDecimalModule, "RoundingMode")
+    private val roundingModeModule = definitions.getMember(bigDecimalModule, newTermName("RoundingMode"))
     
     private def withinRoundingMode(s: Symbol): Boolean =
       s.hasTransOwner(roundingModeModule.moduleClass)
@@ -393,7 +394,7 @@ trait Generating extends Patching { this : Plugin =>
   }
 
   private [Generating] class CleanupConsole(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
-    private val consoleModuleClass = definitions.getModule("scala.Console").moduleClass
+    private val consoleModuleClass = definitions.getRequiredModule("scala.Console").moduleClass
 
     private val defNames = Set("in", "setIn", "withIn", "flush", "textComponents")
 
@@ -412,7 +413,7 @@ trait Generating extends Patching { this : Plugin =>
   
   private[Generating] class RemoveNoStackTraceParent(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val NoStackTraceClass = definitions.getClass("scala.util.control.NoStackTrace")
+    private lazy val NoStackTraceClass = definitions.getRequiredClass("scala.util.control.NoStackTrace")
 
     def collectPatches(tree: Tree) {
       tree match {
@@ -427,18 +428,18 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes references to I/O related classes from xml package */
   private[Generating] class CleanupXmlPackage(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val XmlFactoryPackage = definitions.getModule("scala.xml.factory")
-    private lazy val XmlParsingPackage = definitions.getModule("scala.xml.parsing")
+    private lazy val XmlFactoryPackage = definitions.getRequiredModule("scala.xml.factory")
+    private lazy val XmlParsingPackage = definitions.getRequiredModule("scala.xml.parsing")
     
     private val NoBindingFactoryAdapterName = newTermName("NoBindingFactoryAdapter")
     private val FactoryAdapterName = newTermName("FactoryAdapter")
     
-    private lazy val XmlLoaderClass = definitions.getClass("scala.xml.factory.XMLLoader")
+    private lazy val XmlLoaderClass = definitions.getRequiredClass("scala.xml.factory.XMLLoader")
     private val XmlLoaderName = newTermName("XMLLoader")
     
-    private lazy val XmlObjectClass = definitions.getModule("scala.xml.XML").moduleClass
+    private lazy val XmlObjectClass = definitions.getRequiredModule("scala.xml.XML").moduleClass
     
-    private lazy val XmlSource = definitions.getModule("scala.xml.Source")
+    private lazy val XmlSource = definitions.getRequiredModule("scala.xml.Source")
     
     private val defNames = Set("withSAXParser", "saveFull", "save", "write") map (newTermName)
 
@@ -475,14 +476,14 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes imports of stuff from java.io that is not supported */
   private[Generating] class RemoveBadJavaImports(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val JavaIoPackage = definitions.getModule("java.io")
+    private lazy val JavaIoPackage = definitions.getRequiredModule("java.io")
     private val JavaIoNames = Set("BufferedReader", "Reader", "InputStream", "InputStreamReader",
         "File", "FileDescriptor", "FileInputStream", "FileOutputStream",
         "ObjectOutputStream", "ObjectInputStream", "StringReader", "Writer") map (newTermName)
-    private lazy val JavaIoClasses = JavaIoNames map (x => definitions.getClass(JavaIoPackage.fullName + "." + x.toString))
+    private lazy val JavaIoClasses = JavaIoNames map (x => definitions.getRequiredClass(JavaIoPackage.fullName + "." + x.toString))
 
-    private lazy val JavaTextPackage = definitions.getModule("java.text")
-    private lazy val JavaNioPackage = definitions.getModule("java.nio")
+    private lazy val JavaTextPackage = definitions.getRequiredModule("java.text")
+    private lazy val JavaNioPackage = definitions.getRequiredModule("java.nio")
     
     private def enclTransPackage(sym: Symbol, encl: Symbol): Boolean =
       if (sym == NoSymbol) false
@@ -526,16 +527,16 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes references to java.util.concurrent, java.util.Dictionary and java.util.Properties */
   private[Generating] class CleanupJavaConversions(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val UtilPackage = definitions.getModule("java.util")
+    private lazy val UtilPackage = definitions.getRequiredModule("java.util")
     private val concurrentName = newTermName("concurrent")
     
-    private lazy val ConcurrentPackage = definitions.getModule("java.util.concurrent")
+    private lazy val ConcurrentPackage = definitions.getRequiredModule("java.util.concurrent")
     
-    private lazy val JavaConverionsObjectClass = definitions.getModule("scala.collection.JavaConversions").moduleClass
+    private lazy val JavaConverionsObjectClass = definitions.getRequiredModule("scala.collection.JavaConversions").moduleClass
     
-    private lazy val DictionaryClass = definitions.getClass("java.util.Dictionary")
+    private lazy val DictionaryClass = definitions.getRequiredClass("java.util.Dictionary")
     
-    private lazy val PropertiesClass = definitions.getClass("java.util.Properties")
+    private lazy val PropertiesClass = definitions.getRequiredClass("java.util.Properties")
     
     private val templateNames: Set[Name] = Set("JConcurrentMapWrapper", "JDictionaryWrapper", "ConcurrentMapWrapper", "DictionaryWrapper", "JPropertiesWrapper") map (newTypeName)
     
@@ -569,13 +570,13 @@ trait Generating extends Patching { this : Plugin =>
   /** Removes references to java.util.concurrent, java.util.Dictionary and java.util.Properties */
   private[Generating] class CleanupJavaConverters(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
     
-    private lazy val ConcurrentPackage = definitions.getModule("java.util.concurrent")
+    private lazy val ConcurrentPackage = definitions.getRequiredModule("java.util.concurrent")
     
-    private lazy val JavaConvertersObjectClass = definitions.getModule("scala.collection.JavaConverters").moduleClass
+    private lazy val JavaConvertersTrait = definitions.getRequiredClass("scala.collection.JavaConverters")
     
-    private lazy val DictionaryClass = definitions.getClass("java.util.Dictionary")
+    private lazy val DictionaryClass = definitions.getRequiredClass("java.util.Dictionary")
     
-    private lazy val PropertiesClass = definitions.getClass("java.util.Properties")
+    private lazy val PropertiesClass = definitions.getRequiredClass("java.util.Properties")
     
     private val defNames = Set("asJavaDictionaryConverter", "asJavaConcurrentMapConverter") map (newTermName)
     
@@ -590,11 +591,11 @@ trait Generating extends Patching { this : Plugin =>
     private def badRef(s: Symbol): Boolean = concurrentRef(s) ||  dictionaryRef(s) || propertiesRef(s) 
 
     def collectPatches(tree: Tree) {
-      within(JavaConvertersObjectClass)(tree) {
+      within(JavaConvertersTrait)(tree) {
         case x: ClassDef if (templateNames contains x.name) =>
           removeTemplate(x)
       }
-      enclosingClass(JavaConvertersObjectClass)(tree) {
+      enclosingClass(JavaConvertersTrait)(tree) {
         case x: DefDef if methodRefersTo(x.symbol)(badRef) =>
           removeDefDef(x)
         case x: DefDef if defNames contains x.name =>
@@ -625,7 +626,27 @@ trait Generating extends Patching { this : Plugin =>
     }
 
   }
-  
+
+  /** Removes references to java.lang.ThreadLocal */
+  private [Generating] class CleanupFlatHashTable(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
+    private val moduleClass = definitions.getRequiredModule("scala.collection.mutable.FlatHashTable").moduleClass
+
+    private val clazz = definitions.getRequiredClass("scala.collection.mutable.FlatHashTable")
+
+    def collectPatches(tree: Tree) {
+      enclosingClass(moduleClass)(tree) {
+        case x: DefDef if x.name.toString == "seedGenerator" =>
+          val range = x.rhs.pos.asInstanceOf[RangePosition]
+          patchtree.replace(range.start, range.end, "new util.Random")
+      }
+      enclosingClass(clazz)(tree) {
+        case x: DefDef if x.name.toString == "randomSeed" =>
+          val range = x.rhs.pos.asInstanceOf[RangePosition]
+          patchtree.replace(range.start, range.end, "seedGenerator.nextInt()")
+      }
+    }
+  }
+
   /* ------------------------ The main patcher ------------------------ */
 
   class RephrasingTraverser(patchtree: PatchTree) extends Traverser {
@@ -656,6 +677,8 @@ trait Generating extends Patching { this : Plugin =>
     
     private lazy val removeCloneMethod = new RemoveCloneMethod(patchtree)
 
+    private lazy val cleanupFlatHashTable = new CleanupFlatHashTable(patchtree)
+
     override def traverse(tree: Tree): Unit = {
       
       removeParallelCollections collectPatches tree
@@ -684,6 +707,8 @@ trait Generating extends Patching { this : Plugin =>
       
       removeCloneMethod collectPatches tree
       
+      cleanupFlatHashTable collectPatches tree
+
       super.traverse(tree) // "longest patches first" that's why super.traverse after collectPatches(tree).
     }
 
