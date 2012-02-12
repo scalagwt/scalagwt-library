@@ -115,9 +115,6 @@
         <include name="**/*.scala"/>
         <include name="**/*.java"/>
       </fileset>
-      <fileset dir="${scala-src.dir}/factorymanifests/library">
-        <include name="**/*.scala"/>
-      </fileset>
       <fileset dir="${scala-src.dir}/continuations/library">
         <include name="**/*.scala"/>
       </fileset>
@@ -193,7 +190,6 @@
     <uptodate property="lib-jribble.available" targetfile="${build.dir}/library-gwt.complete">
       <srcfiles dir="${build.dir}/jdk2ikvm">
         <include name="library/**"/>
-        <include name="factorymanifests/**"/>
         <include name="continuations/**"/>
       </srcfiles>
     </uptodate>
@@ -201,7 +197,7 @@
 
   <target name="lib-jribble" depends="pre-lib-jribble" unless="lib-jribble.available">
     <property name="gwt-emul.classpath" value="${build.dir}/classes/gwt-emul:${gwt-basedir}/build/lib/gwt-dev.jar:${gwt-basedir}/build/lib/gwt-user.jar"/>
-    <property name="scalac.args.jribble" value="-javabootclasspath ${gwt-emul.classpath} -g:notailcalls -Xplugin:${scala-basedir}/build/quick/misc/scala-devel/plugins/factorymanifests.jar -Yjribble-text"/>
+    <property name="scalac.args.jribble" value="-javabootclasspath ${gwt-emul.classpath} -g:notailcalls"/>
     <stopwatch name="lib-jribble.timer"/>
     <mkdir dir="${build.dir}/gwt/library"/>
     <scalacfork
