@@ -52,12 +52,6 @@ scala/math/package.scala
 Depends on java.lang.Math.ulp method that is not supported by GWT. Probably should be patched
 automatically if GWT cannot be fixed.
 
-scala/package.scala
--------------------
-Depends on java.lang.AbstractMethodError. Maybe we could create it in GWT?
-Depends on java.lang.Thread (currentThread method). Hopefully can be nuked or
-moved to sys package.
-
 scala/reflect/*Manifest.scala
 -----------------------------
 Goes without the comment. We need to reimplement this stuff to the extent
