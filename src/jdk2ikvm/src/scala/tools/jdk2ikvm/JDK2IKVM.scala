@@ -98,6 +98,9 @@ abstract class JDK2IKVM
             //depends on scala.io
             "scala/collection/immutable/PagedSeq.scala",
             "scala/collection/mutable/WeakHashMap.scala",
+            //both Ctrie and INodeBase depend on java.util.concurrent
+            "scala/collection/mutable/Ctrie.scala",
+            "scala/collection/mutable/INodeBase.java",
             "scala/concurrent/",
             "scala/parallel/",
             "scala/io/",

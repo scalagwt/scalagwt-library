@@ -65,10 +65,6 @@ that is really needed. The only reason why we need Manifests is to support
 Arrays. Once we figure this out, we should have a very simple implementation
 of Manifests that doesn't provide any reflective functionality at all.
 
-scala/reflect/api/Modifier.scala
---------------------------------
-Depends on Enumeration. Rewritten to be source-compatible stub object.
-
 scala/reflect/package.scala
 ---------------------------
 Depends on ReflectionUtils. Replaced by stub-implementation that always
