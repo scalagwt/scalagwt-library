@@ -148,6 +148,10 @@ abstract class JDK2IKVM
             "scala/xml/pull/XMLEventReader.scala",
             "scala/xml/persistent/",
             "scala/xml/factory/",
+            //depends on regexps
+            "scala/util/Duration.scala",
+            //depends on Duration and on concurrent stuff
+            "scala/util/Timeout.scala",
             //we are removing this because it depends on sys/Prop.scala, so it might be included again once props are being handled
             "scala/util/control/NoStackTrace.scala",
             "scala/util/parsing/",
