@@ -9,9 +9,8 @@ package object reflect {
     throw new UnsupportedOperationException("Scala reflection not available on this platform")
   }
 
-  /** Uncomment once we got rid of the old Symbols, Types, Trees
   type Symbol = mirror.Symbol
   type Type = mirror.Type
   type Tree = mirror.Tree
-  */
+
 }

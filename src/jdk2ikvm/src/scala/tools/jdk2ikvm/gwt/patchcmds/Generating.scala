@@ -353,6 +353,24 @@ trait Generating extends Patching { this : Plugin =>
     
   }
   
+  /** Removes/rewrites unsupported exception types and removes currentThread method def.  */
+  private[Generating] class CleanupScalaPackageObject(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
+
+    private val pkgObjectClass = definitions.getPackageObject("scala").moduleClass
+
+    def collectPatches(tree: Tree) = enclosingClass(pkgObjectClass)(tree) {
+      case x: TypeDef if x.name.toString == "InterruptedException" =>
+        val range = rangePosition(x.pos).get
+        patchtree.replace(range.start, range.end, "")
+      case x: TypeDef if x.name.toString == "AbstractMethodError" =>
+        val range = rangePosition(x.rhs.pos).get
+        patchtree.replace(range.start, range.end, "java.lang.RuntimeException")
+      case x: DefDef if x.name.toString == "currentThread" =>
+        removeDefDef(x)
+    }
+
+  }
+
   /** Removes mirror val def that depends on part of reflect package that we excluded */
   private[Generating] class CleanupReflectPackageObject(patchtree: PatchTree) extends CallsiteUtils(patchtree) {
 
@@ -688,6 +706,8 @@ trait Generating extends Patching { this : Plugin =>
     
     private lazy val cleanupPredef = new CleanupPredef(patchtree)
     
+    private lazy val cleanupScalaPackage = new CleanupScalaPackageObject(patchtree)
+
     private lazy val cleanupReflectPackage = new CleanupReflectPackageObject(patchtree)
     
     private lazy val removeNoStackTraceParent = new RemoveNoStackTraceParent(patchtree)
@@ -720,6 +740,8 @@ trait Generating extends Patching { this : Plugin =>
       
       cleanupPredef collectPatches tree
       
+      cleanupScalaPackage collectPatches tree
+
       cleanupReflectPackage collectPatches tree
       
       removeNoStackTraceParent collectPatches tree

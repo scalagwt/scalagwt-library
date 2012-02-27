@@ -98,6 +98,9 @@ abstract class JDK2IKVM
             //depends on scala.io
             "scala/collection/immutable/PagedSeq.scala",
             "scala/collection/mutable/WeakHashMap.scala",
+            //both Ctrie and INodeBase depend on java.util.concurrent
+            "scala/collection/mutable/Ctrie.scala",
+            "scala/collection/mutable/INodeBase.java",
             "scala/concurrent/",
             "scala/parallel/",
             "scala/io/",
@@ -145,6 +148,10 @@ abstract class JDK2IKVM
             "scala/xml/pull/XMLEventReader.scala",
             "scala/xml/persistent/",
             "scala/xml/factory/",
+            //depends on regexps
+            "scala/util/Duration.scala",
+            //depends on Duration and on concurrent stuff
+            "scala/util/Timeout.scala",
             //we are removing this because it depends on sys/Prop.scala, so it might be included again once props are being handled
             "scala/util/control/NoStackTrace.scala",
             "scala/util/parsing/",

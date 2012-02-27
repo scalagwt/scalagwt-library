@@ -52,22 +52,12 @@ scala/math/package.scala
 Depends on java.lang.Math.ulp method that is not supported by GWT. Probably should be patched
 automatically if GWT cannot be fixed.
 
-scala/package.scala
--------------------
-Depends on java.lang.AbstractMethodError. Maybe we could create it in GWT?
-Depends on java.lang.Thread (currentThread method). Hopefully can be nuked or
-moved to sys package.
-
 scala/reflect/*Manifest.scala
 -----------------------------
 Goes without the comment. We need to reimplement this stuff to the extent
 that is really needed. The only reason why we need Manifests is to support
 Arrays. Once we figure this out, we should have a very simple implementation
 of Manifests that doesn't provide any reflective functionality at all.
-
-scala/reflect/api/Modifier.scala
---------------------------------
-Depends on Enumeration. Rewritten to be source-compatible stub object.
 
 scala/reflect/package.scala
 ---------------------------
