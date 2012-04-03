@@ -44,10 +44,10 @@
     </tstamp>
     
     <!-- Generating version number -->
-    <property file="${scala-basedir}/build.number"/>
-    <property
-      name="version.number"
-      value="${version.major}.${version.minor}.${version.patch}-b${time.short}"/>
+    <exec osfamily="unix" dir="${scala-basedir}" executable="tools/get-scala-revision" outputproperty="version.number" failifexecutionfails="false" />
+    <exec osfamily="windows" dir="${scala-basedir}" executable="tools/get-scala-revision.bat" outputproperty="version.number" failifexecutionfails="false" />
+    <!-- some default in case something went wrong getting the revision -->
+    <property name="version.number" value="-unknown-"/>
     <!-- And print-out what we are building -->
     <echo level="info" message="Build number is '${version.number}'"/>
     <echo level="info" message="Built ${time.human} with ${java.vm.name} ${java.version}"/>
